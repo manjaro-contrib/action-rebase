@@ -1,0 +1,35 @@
+name: 'rebase action'
+description: 'tries to rebase a repository onto another'
+
+inputs:
+  token:
+    description: github token (needed if you want to the token to be triggering workflows)
+    required: false
+  upstream:
+    description: upstream git repository url (https)
+    required: true
+  
+
+runs:
+  using: "composite"
+  steps:
+    - name: checkout
+      uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+      with:
+        token: ${{ inputs.token || github.token }}
+        fetch-depth: 0
+    - name: rebase
+      shell: bash
+      run: |
+        git remote add upstream ${{ inputs.upstream }}
+        git fetch upstream
+        git config --global user.email "info@manjaro.download"
+        git config --global user.name "rebase-bot"
+        git rebase upstream/$(git branch --show-current) && git push --force-with-lease
+    - name: dispatch
+      if: ${{ inputs.dispatch-token != '' && inputs.dispatch-target != '' }}
+      uses: peter-evans/repository-dispatch@26b39ed245ab8f31526069329e112ab2fb224588 # v2
+      with:
+        token: ${{ github.token }}
+        repository: ${{ github.repository }}
+        event-type: rebase
