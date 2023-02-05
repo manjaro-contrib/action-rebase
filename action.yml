@@ -7,8 +7,7 @@ inputs:
     required: false
   upstream:
     description: upstream git repository url (https)
-    required: true
-  
+    required: false
 
 runs:
   using: "composite"
@@ -19,6 +18,7 @@ runs:
         token: ${{ inputs.token || github.token }}
         fetch-depth: 0
     - name: rebase
+      if: ${{ inputs.upstream != '' && inputs.upstream != '__UPSTREAM__' }}
       shell: bash
       run: |
         git remote add upstream ${{ inputs.upstream }}
