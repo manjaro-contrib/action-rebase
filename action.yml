@@ -8,6 +8,9 @@ inputs:
   upstream:
     description: upstream git repository url (https)
     required: false
+  upstream-branch:
+    description: branch to rebase the default branch onto
+    required: false
 
 runs:
   using: "composite"
@@ -20,12 +23,15 @@ runs:
     - name: rebase
       if: ${{ inputs.upstream != '' && inputs.upstream != '__UPSTREAM__' }}
       shell: bash
+      env:
+        UPSTREAM_BRANCH: ${{ inputs.upstream-branch }}
       run: |
+        DEFAULT_BRANCH=$(git branch --show-current)
         git remote add upstream ${{ inputs.upstream }}
         git fetch upstream
         git config --global user.email "info@manjaro.download"
         git config --global user.name "rebase-bot"
-        git rebase upstream/$(git branch --show-current) && git push --force-with-lease
+        git rebase upstream/${UPSTREAM_BRANCH:-$DEFAULT_BRANCH} && git push --force-with-lease
     - name: dispatch
       if: ${{ inputs.dispatch-token != '' && inputs.dispatch-target != '' }}
       uses: peter-evans/repository-dispatch@26b39ed245ab8f31526069329e112ab2fb224588 # v2
