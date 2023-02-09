@@ -11,6 +11,12 @@ inputs:
   upstream-branch:
     description: branch to rebase the default branch onto
     required: false
+  dispatch-token:
+    description: token required for dispatch
+    required: false
+  dispatch-target:
+    description: repository managing your packages
+    required: false
 
 runs:
   using: "composite"
@@ -33,9 +39,8 @@ runs:
         git config --global user.name "rebase-bot"
         git rebase upstream/${UPSTREAM_BRANCH:-$DEFAULT_BRANCH} && git push --force-with-lease
     - name: dispatch
-      if: ${{ inputs.dispatch-token != '' && inputs.dispatch-target != '' }}
       uses: peter-evans/repository-dispatch@26b39ed245ab8f31526069329e112ab2fb224588 # v2
       with:
-        token: ${{ github.token }}
-        repository: ${{ github.repository }}
+        token: ${{ inputs.dispatch-token || github.token }}
+        repository: ${{ inputs.dispatch-target || github.repository }}
         event-type: rebase
