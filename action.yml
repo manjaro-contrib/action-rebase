@@ -26,18 +26,33 @@ runs:
       with:
         token: ${{ inputs.token || github.token }}
         fetch-depth: 0
-    - name: rebase
+    - name: setup
+      shell: bash
+      run: |
+        git config user.email "bot@manjaro.download"
+        git config user.name "Repository Update Bot"
+        git config pull.rebase true
+        echo ${{ github.token }} | gh auth login --with-token
+    - name: update upstream tracking branch
       if: ${{ inputs.upstream != '' && inputs.upstream != '__UPSTREAM__' }}
       shell: bash
       env:
         UPSTREAM_BRANCH: ${{ inputs.upstream-branch }}
       run: |
         DEFAULT_BRANCH=$(git branch --show-current)
+        UPSTREAM_BRANCH=${UPSTREAM_BRANCH:-$DEFAULT_BRANCH}
+        UPSTREAM_TRACKING=upstream_${UPSTREAM_BRANCH}
+
         git remote add upstream ${{ inputs.upstream }}
         git fetch upstream
-        git config --global user.email "info@manjaro.download"
-        git config --global user.name "rebase-bot"
-        git rebase upstream/${UPSTREAM_BRANCH:-$DEFAULT_BRANCH} && git push --force-with-lease
+
+        git checkout upstream_${UPSTREAM_BRANCH} 2>/dev/null && git pull origin upstream_${UPSTREAM_BRANCH} || git checkout -b upstream_${UPSTREAM_BRANCH}
+        
+        echo "## try to rebase onto the tracked upstream branch"
+        git rebase upstream/${UPSTREAM_BRANCH} || git rebase --skip
+
+        git push --force --set-upstream origin upstream_${UPSTREAM_BRANCH}
+        gh pr create --fill || exit 0
     - name: dispatch
       uses: peter-evans/repository-dispatch@26b39ed245ab8f31526069329e112ab2fb224588 # v2
       with:
