@@ -46,10 +46,10 @@ runs:
         git remote add upstream ${{ inputs.upstream }}
         git fetch upstream
 
-        git checkout upstream_${UPSTREAM_BRANCH} 2>/dev/null && git pull origin upstream_${UPSTREAM_BRANCH} || git checkout -b upstream_${UPSTREAM_BRANCH}
+        git checkout upstream_${UPSTREAM_BRANCH} 2>/dev/null || git checkout -b upstream_${UPSTREAM_BRANCH}
         
-        echo "## try to rebase onto the tracked upstream branch"
-        git rebase upstream/${UPSTREAM_BRANCH} || git rebase --skip
+        echo "## checking out the upstream branch"
+        git reset --hard upstream/${UPSTREAM_BRANCH}
 
         git push --force --set-upstream origin upstream_${UPSTREAM_BRANCH}
         gh pr create --fill || exit 0
